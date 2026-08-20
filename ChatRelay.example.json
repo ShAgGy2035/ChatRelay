@@ -1,0 +1,7 @@
+{
+  "IgnoreCommands": true,
+  "OnlyShowCommands": false,
+  "TargetIp": "YOUR_PUBLIC_IP_OR_DNS",
+  "TargetPort": 90,
+  "SharedToken": "REPLACE_WITH_A_LONG_RANDOM_TOKEN"
+}
