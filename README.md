@@ -4,6 +4,10 @@
 
 ChatRelay UDP is a CounterStrikeSharp plugin designed to seamlessly forward Counter-Strike 2 (CS2) player chat messages to a companion desktop application (Example: [Ultimate RCON Server Tool](https://github.com/ShAgGy2035/Ultimate-RCON-Server-Tool)) via UDP.
 
+## Download
+
+Download the latest installation ZIP from [GitHub Releases](https://github.com/ShAgGy2035/ChatRelay/releases). Compiled binaries are distributed through releases rather than the repository's Code tab.
+
 ## Features & Capabilities
 
 * **Real-Time Chat Forwarding:** Instantly captures and transmits in-game chat messages from your CS2 server to an external listener.
@@ -23,8 +27,8 @@ ChatRelay UDP is a CounterStrikeSharp plugin designed to seamlessly forward Coun
 
 ## Installation
 
-1. Download `ChatRelay.dll` from the release assets.
-2. Copy it to your server directory:
+1. Download the latest `ChatRelay` ZIP from [GitHub Releases](https://github.com/ShAgGy2035/ChatRelay/releases).
+2. Extract `ChatRelay.dll` and copy it to your server directory:
 `game/csgo/addons/counterstrikesharp/plugins/ChatRelay/ChatRelay.dll`
 3. Start or reload the plugin.
 4. Configure the generated ChatRelay configuration file:
@@ -52,6 +56,7 @@ Example (`ChatRelay.json`):
       "OnlyShowCommands": true
     }
   ],
+  "ConfigVersion": 1
 }
 
 ```

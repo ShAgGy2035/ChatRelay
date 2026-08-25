@@ -14,5 +14,6 @@
       "IgnoreCommands": false,
       "OnlyShowCommands": true
     }
-  ]
+  ],
+  "ConfigVersion": 1
 }
