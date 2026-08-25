@@ -51,7 +51,7 @@ Example (`ChatRelay.json`):
       "IgnoreCommands": false,
       "OnlyShowCommands": true
     }
-  ]
+  ],
 }
 
 ```
