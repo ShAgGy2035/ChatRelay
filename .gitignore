@@ -4,3 +4,4 @@ obj/
 *.suo
 *.pdb
 .vs/
+.vscode/settings.json

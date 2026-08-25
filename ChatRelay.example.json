@@ -1,7 +1,18 @@
 {
   "IgnoreCommands": true,
   "OnlyShowCommands": false,
-  "TargetIp": "YOUR_PUBLIC_IP_OR_DNS",
-  "TargetPort": 90,
-  "SharedToken": "REPLACE_WITH_A_LONG_RANDOM_TOKEN"
+  "Targets": [
+    {
+      "TargetIp": "YOUR_PUBLIC_IP_OR_DNS",
+      "TargetPort": 9090,
+      "SharedToken": "REPLACE_WITH_A_LONG_RANDOM_TOKEN"
+    },
+    {
+      "TargetIp": "SECOND_PUBLIC_IP_OR_DNS",
+      "TargetPort": 9091,
+      "SharedToken": "USE_A_DIFFERENT_LONG_RANDOM_TOKEN",
+      "IgnoreCommands": false,
+      "OnlyShowCommands": true
+    }
+  ]
 }

@@ -1,6 +1,6 @@
 ---
 
-# ChatRelay UDP v1.0.0
+# ChatRelay UDP v1.1.0
 
 ChatRelay UDP is a CounterStrikeSharp plugin designed to seamlessly forward Counter-Strike 2 (CS2) player chat messages to a companion desktop application via UDP.
 
@@ -9,7 +9,9 @@ ChatRelay UDP is a CounterStrikeSharp plugin designed to seamlessly forward Coun
 * **Real-Time Chat Forwarding:** Instantly captures and transmits in-game chat messages from your CS2 server to an external listener.
 * **Shared-Token Authentication:** Secures your UDP packet stream using token validation between the plugin and the desktop application to prevent unauthorized or forged packets.
 * **Secure Storage:** Integrates Windows DPAPI for encrypted token storage within the desktop application.
-* **Message Filtering & Controls:** Easily toggle command filtering (`IgnoreCommands` and `OnlyShowCommands`) directly via configuration.
+* **Multiple Destinations:** Forward chat to as many as 10 independent IP/DNS and UDP port combinations.
+* **Per-Target Authentication:** Configure a separate shared token for each destination.
+* **Message Filtering & Controls:** Set global command filters and optionally override them per target.
 * **Enhanced Diagnostics:** Provides robust error logging, packet diagnostics, and asynchronous UDP message transmission for stable performance.
 
 ## Requirements
@@ -36,14 +38,29 @@ Example (`ChatRelay.json`):
 {
   "IgnoreCommands": true,
   "OnlyShowCommands": false,
-  "TargetIp": "YOUR_PUBLIC_IP_OR_DNS",
-  "TargetPort": 90,
-  "SharedToken": "REPLACE_WITH_A_LONG_RANDOM_TOKEN"
+  "Targets": [
+    {
+      "TargetIp": "YOUR_PUBLIC_IP_OR_DNS",
+      "TargetPort": 9090,
+      "SharedToken": "REPLACE_WITH_A_LONG_RANDOM_TOKEN"
+    },
+    {
+      "TargetIp": "SECOND_PUBLIC_IP_OR_DNS",
+      "TargetPort": 9091,
+      "SharedToken": "USE_A_DIFFERENT_LONG_RANDOM_TOKEN",
+      "IgnoreCommands": false,
+      "OnlyShowCommands": true
+    }
+  ]
 }
 
 ```
 
-> **Note:** `TargetIp` must point to the public IP address or DNS name of the computer running the desktop listener. Do not use a private address such as `192.168.x.x` when the game server is hosted externally.
+The top-level `IgnoreCommands` and `OnlyShowCommands` values are defaults. A target can override either value; omitted overrides inherit the global setting. A target with both effective values set to `true` is ignored because it would accept no messages.
+
+Each target may use a different host, port, and token. Up to 10 targets are used; additional entries are ignored. Existing single-target configurations remain supported, but new configurations should use `Targets`.
+
+> **Note:** Each `TargetIp` must point to the public IP address or DNS name of the computer running that desktop listener. Do not use a private address such as `192.168.x.x` when the game server is hosted externally.
 
 ## Desktop Application Setup for Authentication
 
@@ -56,7 +73,7 @@ If you are using the companion desktop app, configure your matching token under:
 
 Forward the configured UDP port from your router to the computer running the desktop application.
 
-* **Example:** `UDP port 90 -> 192.168.1.21:90`
+* **Example:** `UDP port 9090 -> 192.168.1.21:9090`
 
 The desktop app must also be configured to:
 
@@ -80,7 +97,7 @@ The desktop app displays messages in a readable format such as:
 ## Troubleshooting
 
 * Confirm `ChatRelay` appears as loaded in the CounterStrikeSharp logs.
-* Confirm `TargetIp`, `TargetPort`, and `SharedToken` are correct.
+* Confirm every target's `TargetIp`, `TargetPort`, and `SharedToken` are correct.
 * Confirm the desktop chat listener is enabled.
 * Use the desktop app's local UDP test first.
 * Check Windows Firewall and router UDP forwarding.
