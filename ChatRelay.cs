@@ -56,16 +56,24 @@ public sealed class ChatRelayMessage
     public string Token { get; set; } = string.Empty;
 }
 
+internal sealed class ChatRelayDestination(ChatRelayTarget target, IPEndPoint endPoint, UdpClient udpClient) : IDisposable
+{
+    public ChatRelayTarget Target { get; } = target;
+    public IPEndPoint EndPoint { get; } = endPoint;
+    public UdpClient UdpClient { get; } = udpClient;
+
+    public void Dispose() => UdpClient.Dispose();
+}
+
 public sealed class ChatRelay : BasePlugin, IPluginConfig<ChatRelayConfig>
 {
     public override string ModuleName => "ChatRelay UDP";
     public override string ModuleDescription => "Forwards CS2 player chat to a UDP listener";
     public override string ModuleAuthor => "ShAgGy";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.0.0";
 
     public ChatRelayConfig Config { get; set; } = new();
-    private UdpClient? udpClient;
-    private IReadOnlyList<ChatRelayTarget> configuredTargets = [];
+    private IReadOnlyList<ChatRelayDestination> configuredTargets = [];
 
     public void OnConfigParsed(ChatRelayConfig config)
     {
@@ -74,7 +82,6 @@ public sealed class ChatRelay : BasePlugin, IPluginConfig<ChatRelayConfig>
 
     public override void Load(bool hotReload)
     {
-        udpClient = new UdpClient();
         configuredTargets = GetValidTargets();
         Logger.LogInformation("ChatRelay UDP loaded with {TargetCount} target(s).", configuredTargets.Count);
         RegisterEventHandler<EventPlayerChat>(OnPlayerChat);
@@ -106,8 +113,8 @@ public sealed class ChatRelay : BasePlugin, IPluginConfig<ChatRelayConfig>
 
         foreach (var target in configuredTargets)
         {
-            var ignoreCommands = target.IgnoreCommands ?? Config.IgnoreCommands;
-            var onlyShowCommands = target.OnlyShowCommands ?? Config.OnlyShowCommands;
+            var ignoreCommands = target.Target.IgnoreCommands ?? Config.IgnoreCommands;
+            var onlyShowCommands = target.Target.OnlyShowCommands ?? Config.OnlyShowCommands;
             if ((ignoreCommands && startsWithCommand) || (onlyShowCommands && !startsWithCommand))
                 continue;
 
@@ -117,7 +124,7 @@ public sealed class ChatRelay : BasePlugin, IPluginConfig<ChatRelayConfig>
         return HookResult.Continue;
     }
 
-    private IReadOnlyList<ChatRelayTarget> GetValidTargets()
+    private IReadOnlyList<ChatRelayDestination> GetValidTargets()
     {
         IEnumerable<ChatRelayTarget> targets;
         if (Config.Targets.Count > 0)
@@ -146,7 +153,7 @@ public sealed class ChatRelay : BasePlugin, IPluginConfig<ChatRelayConfig>
             return [];
         }
 
-        var validTargets = new List<ChatRelayTarget>();
+        var validTargets = new List<ChatRelayDestination>();
         foreach (var target in targets)
         {
             if (string.IsNullOrWhiteSpace(target.TargetIp) || target.TargetPort is < 1 or > 65535)
@@ -161,18 +168,33 @@ public sealed class ChatRelay : BasePlugin, IPluginConfig<ChatRelayConfig>
                 continue;
             }
 
-            validTargets.Add(target);
+            try
+            {
+                var addresses = Dns.GetHostAddresses(target.TargetIp);
+                var address = addresses.FirstOrDefault(candidate => candidate.AddressFamily == AddressFamily.InterNetwork)
+                    ?? addresses.FirstOrDefault();
+                if (address is null)
+                {
+                    Logger.LogWarning("Ignoring ChatRelay target {TargetIp}:{TargetPort} because its host resolved to no addresses.", target.TargetIp, target.TargetPort);
+                    continue;
+                }
+
+                var endPoint = new IPEndPoint(address, target.TargetPort);
+                validTargets.Add(new ChatRelayDestination(target, endPoint, new UdpClient(address.AddressFamily)));
+            }
+            catch (Exception ex) when (ex is SocketException or ArgumentException)
+            {
+                Logger.LogWarning(ex, "Ignoring ChatRelay target {TargetIp}:{TargetPort} because its host could not be resolved.", target.TargetIp, target.TargetPort);
+            }
         }
 
         return validTargets;
     }
 
-    private async Task SendUdpPayloadAsync(ChatRelayTarget target, string playerName, string message, string team, ulong steamId)
+    private async Task SendUdpPayloadAsync(ChatRelayDestination target, string playerName, string message, string team, ulong steamId)
     {
         try
         {
-            if (udpClient is null)
-                return;
             var payload = new ChatRelayMessage
             {
                 PlayerName = playerName,
@@ -180,12 +202,12 @@ public sealed class ChatRelay : BasePlugin, IPluginConfig<ChatRelayConfig>
                 Team = team,
                 Message = message,
                 Timestamp = DateTime.UtcNow.ToString("O"),
-                Token = target.SharedToken
+                Token = target.Target.SharedToken
             };
             var json = JsonSerializer.Serialize(payload);
             var bytes = Encoding.UTF8.GetBytes(json);
-            var sent = await udpClient.SendAsync(bytes, bytes.Length, target.TargetIp, target.TargetPort);
-            Logger.LogDebug("ChatRelay UDP packet sent: {Bytes} bytes to {TargetIp}:{TargetPort}.", sent, target.TargetIp, target.TargetPort);
+            var sent = await target.UdpClient.SendAsync(bytes, bytes.Length, target.EndPoint);
+            Logger.LogDebug("ChatRelay UDP packet sent: {Bytes} bytes to {TargetIp}:{TargetPort}.", sent, target.Target.TargetIp, target.Target.TargetPort);
         }
         catch (Exception ex)
         {
@@ -195,8 +217,9 @@ public sealed class ChatRelay : BasePlugin, IPluginConfig<ChatRelayConfig>
 
     public override void Unload(bool hotReload)
     {
-        udpClient?.Dispose();
-        udpClient = null;
+        foreach (var target in configuredTargets)
+            target.Dispose();
+
         configuredTargets = [];
     }
 }

@@ -1,8 +1,8 @@
 ---
 
-# ChatRelay UDP v1.1.0
+# ChatRelay UDP v1.0.0
 
-ChatRelay UDP is a CounterStrikeSharp plugin designed to seamlessly forward Counter-Strike 2 (CS2) player chat messages to a companion desktop application via UDP.
+ChatRelay UDP is a CounterStrikeSharp plugin designed to seamlessly forward Counter-Strike 2 (CS2) player chat messages to a companion desktop application (Example: [Ultimate RCON Server Tool](https://github.com/ShAgGy2035/Ultimate-RCON-Server-Tool)) via UDP.
 
 ## Features & Capabilities
 
@@ -58,7 +58,7 @@ Example (`ChatRelay.json`):
 
 The top-level `IgnoreCommands` and `OnlyShowCommands` values are defaults. A target can override either value; omitted overrides inherit the global setting. A target with both effective values set to `true` is ignored because it would accept no messages.
 
-Each target may use a different host, port, and token. Up to 10 targets are used; additional entries are ignored. Existing single-target configurations remain supported, but new configurations should use `Targets`.
+Each target may use a different host, port, and token. Up to 10 targets are used; additional entries are ignored.
 
 > **Note:** Each `TargetIp` must point to the public IP address or DNS name of the computer running that desktop listener. Do not use a private address such as `192.168.x.x` when the game server is hosted externally.
 
@@ -98,6 +98,7 @@ The desktop app displays messages in a readable format such as:
 
 * Confirm `ChatRelay` appears as loaded in the CounterStrikeSharp logs.
 * Confirm every target's `TargetIp`, `TargetPort`, and `SharedToken` are correct.
+* Ensure every target host resolves and the JSON has no trailing comma after the final target.
 * Confirm the desktop chat listener is enabled.
 * Use the desktop app's local UDP test first.
 * Check Windows Firewall and router UDP forwarding.
@@ -106,7 +107,7 @@ The desktop app displays messages in a readable format such as:
 
 ## Security Notice
 
-While UDP is inherently connectionless, v1.0.0 incorporates shared-token authentication to reject unauthenticated or malformed packets. For maximum deployment safety, restrict the forwarded port using strict firewall rules or route traffic through a VPN/private network.
+While UDP is inherently connectionless, ChatRelay incorporates shared-token authentication to reject unauthenticated or malformed packets. For maximum deployment safety, restrict the forwarded port using strict firewall rules or route traffic through a VPN/private network.
 
 ## Compatibility
 
