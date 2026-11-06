@@ -1,8 +1,4 @@
-# ChatRelay UDP
-
-Development version: 1.0.2 (unreleased).
-
-Latest finalized local release: 1.0.1, prepared on 2026-11-06. GitHub publication is pending. New changes belong in the local [1.0.2 release notes](Release%20Notes-1.0.2.md); finalized 1.0.1 notes are read-only and hash-protected. Plugin release-note files remain local and excluded from Git.
+# ChatRelay UDP - version: 1.0.1
 
 ChatRelay forwards CS2 player chat to a desktop listener such as [Universal](https://github.com/ShAgGy2035/Ultimate-RCON-Server-Tool). Install the plugin on the game server, then configure the matching destination and encryption key in both applications.
 
@@ -22,7 +18,6 @@ ChatRelay forwards CS2 player chat to a desktop listener such as [Universal](htt
 - [Security Notice](#security-notice)
 - [Troubleshooting](#troubleshooting)
 - [Wire Protocol](#wire-protocol)
-- [Building a Local Package](#building-a-local-package)
 - [Compatibility](#compatibility)
 
 ## Features & Capabilities
@@ -47,7 +42,7 @@ ChatRelay forwards game chat to the listener; it is not a two-way chat bridge. U
 
 Download the latest installation ZIP from [GitHub Releases](https://github.com/ShAgGy2035/ChatRelay/releases). Compiled binaries are distributed through releases rather than the repository's Code tab.
 
-Version 1.0.1 is not yet published. See the [1.0.1 release notes](Release%20Notes-1.0.1.md) for upcoming changes; older unencrypted releases are not compatible with the secure-only listener.
+See the [1.0.1 release notes and downloads](https://github.com/ShAgGy2035/ChatRelay/releases/tag/v1.0.1). Older unencrypted releases are not compatible with the secure-only listener.
 
 ## Installation
 
@@ -169,12 +164,6 @@ Universal accepts v1 timestamps within ±120 seconds and stores accepted nonces 
 
 The desktop app displays messages in a readable format such as:
 `[ALL] PlayerName: Hello`
-
-## Building a local package
-
-Run `.\build-release.ps1` from PowerShell. It builds `bin\Release\ChatRelay.zip`, containing `ChatRelay/ChatRelay.dll`, and writes `ChatRelay.zip.sha256` beside it after closing the archive. Add `-Verbose` for checksum-generation diagnostics. Rebuild after any DLL change so the checksum always matches the final ZIP.
-
-This does not upload, publish, or deploy. When publication is explicitly approved, include the matching checksum file and verify GitHub's release-asset SHA-256 digest against the final ZIP. Universal automatically uses that API digest, not the sidecar; absent digest metadata still requires manual integrity approval.
 
 ## Compatibility
 
