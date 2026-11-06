@@ -1,6 +1,4 @@
-# ChatRelay UDP
-
-Development version: 1.0.1
+# ChatRelay UDP - version: 1.0.1
 
 ChatRelay forwards CS2 player chat to a desktop listener such as [Universal](https://github.com/ShAgGy2035/Ultimate-RCON-Server-Tool). Install the plugin on the game server, then configure the matching destination and encryption key in both applications.
 
