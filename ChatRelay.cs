@@ -1,7 +1,5 @@
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
@@ -35,25 +33,30 @@ public sealed class ChatRelayConfig : BasePluginConfig
     [JsonPropertyName("SharedToken")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? SharedToken { get; set; }
+
+    [JsonPropertyName("KeyBase64")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? KeyBase64 { get; set; }
+
+    [JsonPropertyName("AllowLegacyPlaintext")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? AllowLegacyPlaintext { get; set; }
 }
 
 public sealed class ChatRelayTarget
 {
+    public string KeyBase64 { get; set; } = string.Empty;
     public string TargetIp { get; set; } = "127.0.0.1";
     public int TargetPort { get; set; } = 9090;
-    public string SharedToken { get; set; } = string.Empty;
+    [JsonPropertyName("SharedToken")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? SharedToken { get; set; }
+
+    [JsonPropertyName("AllowLegacyPlaintext")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? AllowLegacyPlaintext { get; set; }
     public bool? IgnoreCommands { get; set; }
     public bool? OnlyShowCommands { get; set; }
-}
-
-public sealed class ChatRelayMessage
-{
-    public string PlayerName { get; set; } = string.Empty;
-    public string SteamID { get; set; } = string.Empty;
-    public string Team { get; set; } = "[ALL]";
-    public string Message { get; set; } = string.Empty;
-    public string Timestamp { get; set; } = string.Empty;
-    public string Token { get; set; } = string.Empty;
 }
 
 internal sealed class ChatRelayDestination(ChatRelayTarget target, IPEndPoint endPoint, UdpClient udpClient) : IDisposable
@@ -70,7 +73,7 @@ public sealed class ChatRelay : BasePlugin, IPluginConfig<ChatRelayConfig>
     public override string ModuleName => "ChatRelay UDP";
     public override string ModuleDescription => "Forwards CS2 player chat to a UDP listener";
     public override string ModuleAuthor => "ShAgGy";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.0.2";
 
     public ChatRelayConfig Config { get; set; } = new();
     private IReadOnlyList<ChatRelayDestination> configuredTargets = [];
@@ -83,7 +86,7 @@ public sealed class ChatRelay : BasePlugin, IPluginConfig<ChatRelayConfig>
     public override void Load(bool hotReload)
     {
         configuredTargets = GetValidTargets();
-        Logger.LogInformation("ChatRelay UDP loaded with {TargetCount} target(s).", configuredTargets.Count);
+        Logger.LogInformation("ChatRelay authenticated UDP v1 is the only supported transport; loaded {TargetCount} valid target(s).", configuredTargets.Count);
         RegisterEventHandler<EventPlayerChat>(OnPlayerChat);
     }
 
@@ -126,6 +129,9 @@ public sealed class ChatRelay : BasePlugin, IPluginConfig<ChatRelayConfig>
 
     private IReadOnlyList<ChatRelayDestination> GetValidTargets()
     {
+        if (!string.IsNullOrWhiteSpace(Config.SharedToken) || Config.AllowLegacyPlaintext.HasValue)
+            Logger.LogWarning("Saved root plaintext ChatRelay settings are obsolete and ignored; only authenticated UDP v1 is supported.");
+
         IEnumerable<ChatRelayTarget> targets;
         if (Config.Targets.Count > 0)
         {
@@ -136,14 +142,16 @@ public sealed class ChatRelay : BasePlugin, IPluginConfig<ChatRelayConfig>
         }
         else if (!string.IsNullOrWhiteSpace(Config.TargetIp) && Config.TargetPort.HasValue)
         {
-            Logger.LogWarning("ChatRelay is using legacy single-target settings. Migrate to the Targets array when convenient.");
+            Logger.LogWarning("ChatRelay is using the single-target settings shape. Migrate to the Targets array when convenient.");
             targets =
             [
                 new ChatRelayTarget
                 {
                     TargetIp = Config.TargetIp,
                     TargetPort = Config.TargetPort.Value,
-                    SharedToken = Config.SharedToken ?? string.Empty
+                    SharedToken = Config.SharedToken ?? string.Empty,
+                    KeyBase64 = Config.KeyBase64 ?? string.Empty,
+                    AllowLegacyPlaintext = Config.AllowLegacyPlaintext
                 }
             ];
         }
@@ -167,6 +175,30 @@ public sealed class ChatRelay : BasePlugin, IPluginConfig<ChatRelayConfig>
                 Logger.LogWarning("Ignoring ChatRelay target {TargetIp}:{TargetPort} because both command filters are enabled.", target.TargetIp, target.TargetPort);
                 continue;
             }
+
+            var hasSecureKey = ChatRelaySecureProtocol.TryParseKey(target.KeyBase64, out var validatedKey);
+            if (hasSecureKey)
+                System.Security.Cryptography.CryptographicOperations.ZeroMemory(validatedKey);
+            if (!string.IsNullOrWhiteSpace(target.KeyBase64) && !hasSecureKey)
+            {
+                Logger.LogWarning("Ignoring ChatRelay target {TargetIp}:{TargetPort}: its configured secure KeyBase64 is invalid; refusing plaintext downgrade.",
+                    target.TargetIp, target.TargetPort);
+                continue;
+            }
+            if (!hasSecureKey)
+            {
+                var legacyOnly = target.AllowLegacyPlaintext.HasValue || !string.IsNullOrWhiteSpace(target.SharedToken);
+                Logger.LogWarning(
+                    "Ignoring ChatRelay target {TargetIp}:{TargetPort}: {ConfigurationError}",
+                    target.TargetIp, target.TargetPort,
+                    legacyOnly
+                        ? "its saved plaintext settings are no longer supported; configure a matching canonical base64 32-byte KeyBase64."
+                        : "configure a matching canonical base64 32-byte KeyBase64; plaintext transport is not supported.");
+                continue;
+            }
+            if (target.AllowLegacyPlaintext.HasValue || !string.IsNullOrWhiteSpace(target.SharedToken))
+                Logger.LogWarning("ChatRelay target {TargetIp}:{TargetPort} contains obsolete plaintext settings; they are ignored and only authenticated UDP v1 will be sent.",
+                    target.TargetIp, target.TargetPort);
 
             try
             {
@@ -195,19 +227,10 @@ public sealed class ChatRelay : BasePlugin, IPluginConfig<ChatRelayConfig>
     {
         try
         {
-            var payload = new ChatRelayMessage
-            {
-                PlayerName = playerName,
-                SteamID = steamId.ToString(),
-                Team = team,
-                Message = message,
-                Timestamp = DateTime.UtcNow.ToString("O"),
-                Token = target.Target.SharedToken
-            };
-            var json = JsonSerializer.Serialize(payload);
-            var bytes = Encoding.UTF8.GetBytes(json);
-            var sent = await target.UdpClient.SendAsync(bytes, bytes.Length, target.EndPoint);
-            Logger.LogDebug("ChatRelay UDP packet sent: {Bytes} bytes to {TargetIp}:{TargetPort}.", sent, target.Target.TargetIp, target.Target.TargetPort);
+            await ChatRelayUdpSender.SendAsync(target.UdpClient, target.EndPoint, target.Target,
+                playerName, message, team, steamId);
+            Logger.LogDebug("ChatRelay authenticated UDP v1 datagram sent to {TargetIp}:{TargetPort}.",
+                target.Target.TargetIp, target.Target.TargetPort);
         }
         catch (Exception ex)
         {

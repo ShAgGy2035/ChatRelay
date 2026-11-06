@@ -5,12 +5,12 @@
     {
       "TargetIp": "YOUR_PUBLIC_IP_OR_DNS",
       "TargetPort": 9090,
-      "SharedToken": "REPLACE_WITH_A_LONG_RANDOM_TOKEN"
+      "KeyBase64": "PASTE_BASE64_OF_32_RANDOM_BYTES_HERE"
     },
     {
       "TargetIp": "SECOND_PUBLIC_IP_OR_DNS",
       "TargetPort": 9091,
-      "SharedToken": "USE_A_DIFFERENT_LONG_RANDOM_TOKEN",
+      "KeyBase64": "PASTE_A_DIFFERENT_BASE64_32_BYTE_KEY_HERE",
       "IgnoreCommands": false,
       "OnlyShowCommands": true
     }

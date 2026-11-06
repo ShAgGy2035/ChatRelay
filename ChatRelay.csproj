@@ -1,14 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <AnalysisLevelSecurity>latest-all</AnalysisLevelSecurity>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>ChatRelay</AssemblyName>
     <RootNamespace>ChatRelay</RootNamespace>
     <LangVersion>latest</LangVersion>
-    <Version>1.0.0</Version>
+    <Version>1.0.2</Version>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="tests\**\*.cs" />
     <PackageReference Include="CounterStrikeSharp.API" Version="1.0.372" />
   </ItemGroup>
 </Project>
