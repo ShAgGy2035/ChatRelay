@@ -24,19 +24,19 @@ ChatRelay forwards CS2 player chat to a desktop listener such as [ShAgGy's Ultim
 
 * **Live Chat Forwarding:** Sends all-chat and team-chat messages to an external listener, including their player name, Steam ID, team label, and UTC timestamp.
 * **Encrypted Messages:** Messages are protected against reading and alteration; the shared key is never sent with them.
-* **Duplicate Protection:** Universal rejects previously received messages and messages outside the allowed time window.
+* **Duplicate Protection:** Ultimate CS2 RCON/Server Tool rejects previously received messages and messages outside the allowed time window.
 * **Multiple Destinations:** Forward chat to as many as 10 independent IP/DNS and UDP port combinations.
 * **Per-Target Keys:** Configure a separate 32-byte encryption key for each destination.
 * **Message Filtering & Controls:** Set global command filters and optionally override them per target.
-* **Diagnostics:** Reports invalid destinations and send errors in server logs; Universal provides listener diagnostics and a local UDP test.
+* **Diagnostics:** Reports invalid destinations and send errors in server logs; Ultimate CS2 RCON/Server Tool provides listener diagnostics and a local UDP test.
 
-ChatRelay forwards game chat to the listener; it is not a two-way chat bridge. Universal's outbound server messages use RCON separately. UDP delivery is not guaranteed, even when a send reports success.
+ChatRelay forwards game chat to the listener; it is not a two-way chat bridge. Ultimate CS2 RCON/Server Tool's outbound server messages use RCON separately. UDP delivery is not guaranteed, even when a send reports success.
 
 ## Requirements
 
 * A CS2 dedicated server with Metamod and CounterStrikeSharp supporting .NET 10.
 * CounterStrikeSharp API 1.0.372 or a compatible runtime.
-* Universal 1.0.6 or another listener supporting ChatRelay's encrypted version-1 message format.
+* Ultimate CS2 RCON/Server Tool 1.0.6 or another listener supporting ChatRelay's encrypted version-1 message format.
 
 ## Download
 
@@ -58,9 +58,9 @@ Back up existing configuration before upgrading. Keep it outside public download
 
 ## Desktop Application Setup
 
-1. In Universal, select the server and open **Edit server > Integrations**.
-2. Use **Generate** to create a cryptographically random 32-byte key, then save the profile. Universal protects the saved key using its credential-protection mechanism.
-3. Open Universal's **Chat** tab, select the listener's network adapter, and set its UDP port (`1024`-`65535`; default `9090`).
+1. In Ultimate CS2 RCON/Server Tool, select the server and open **Edit server > Integrations**.
+2. Use **Generate** to create a cryptographically random 32-byte key, then save the profile. Ultimate CS2 RCON/Server Tool protects the saved key using its credential-protection mechanism.
+3. Open Ultimate CS2 RCON/Server Tool's **Chat** tab, select the listener's network adapter, and set its UDP port (`1024`-`65535`; default `9090`).
 4. Use **Copy ChatRelay target JSON** and put the generated entry in the plugin configuration's `Targets` list. Keep the surrounding JSON structure shown under [Configuration](#configuration).
 5. Check the copied `TargetIp`: it contains the selected adapter's local address. If the game server is outside that network, replace it in the plugin entry with the desktop network's reachable public IP/DNS or VPN address. Do not use the game server's own address as the destination.
 6. Save valid JSON, then reload ChatRelay or restart the server.
@@ -77,16 +77,16 @@ If the listener is behind a router, forward the configured UDP port to that comp
 Public UDP 9090 -> desktop 192.168.1.21:9090
 ```
 
-Allow the listener through the desktop firewall using appropriately restricted rules. In Universal, select the correct network adapter and matching UDP port, then enable the chat listener. Encryption does not create forwarding rules, change bind addresses, or bypass a firewall.
+Allow the listener through the desktop firewall using appropriately restricted rules. In Ultimate CS2 RCON/Server Tool, select the correct network adapter and matching UDP port, then enable the chat listener. Encryption does not create forwarding rules, change bind addresses, or bypass a firewall.
 
 ## Verify Chat Delivery
 
 1. Confirm `ChatRelay` is loaded in CounterStrikeSharp and the startup log reports the expected number of valid targets.
-2. In Universal, enable the listener for the configured profile and run its local UDP test.
+2. In Ultimate CS2 RCON/Server Tool, enable the listener for the configured profile and run its local UDP test.
 3. Send an ordinary player-chat message from the game server, not a `!` or `/` command (commands are filtered by default).
-4. Check that Universal displays the message, for example `[ALL] PlayerName: Hello`. Try team chat if you need to verify its label too.
+4. Check that Ultimate CS2 RCON/Server Tool displays the message, for example `[ALL] PlayerName: Hello`. Try team chat if you need to verify its label too.
 
-The local UDP test checks the desktop listener; it does not prove that the remote server can reach it. Successful in-game delivery verifies the complete route and matching key. After changing profiles or keys, stop and re-enable Universal's listener. Keep both computers' clocks accurate.
+The local UDP test checks the desktop listener; it does not prove that the remote server can reach it. Successful in-game delivery verifies the complete route and matching key. After changing profiles or keys, stop and re-enable Ultimate CS2 RCON/Server Tool's listener. Keep both computers' clocks accurate.
 
 ## Configuration
 
@@ -115,9 +115,9 @@ Use [ChatRelay.example.json](ChatRelay.example.json) as a template. This example
 
 ```
 
-Replace every address/key placeholder before use. The plugin accepts `TargetPort` from `1` to `65535`; Universal's listener uses `1024`-`65535`. Only the first 10 target entries are considered; additional entries are ignored. Reload the plugin after changing addresses, keys, or filters.
+Replace every address/key placeholder before use. The plugin accepts `TargetPort` from `1` to `65535`; Ultimate CS2 RCON/Server Tool's listener uses `1024`-`65535`. Only the first 10 target entries are considered; additional entries are ignored. Reload the plugin after changing addresses, keys, or filters.
 
-Each target uses a distinct 32-byte random key encoded as canonical base64. Prefer Universal's generator; if OpenSSL is available, `openssl rand -base64 32` is an alternative. Copy the same value to Universal's **Edit server > Integrations > Secure key**. Restrict access to the plugin configuration and store backups privately.
+Each target uses a distinct 32-byte random key encoded as canonical base64. Prefer Ultimate CS2 RCON/Server Tool's generator; if OpenSSL is available, `openssl rand -base64 32` is an alternative. Copy the same value to Ultimate CS2 RCON/Server Tool's **Edit server > Integrations > Secure key**. Restrict access to the plugin configuration and store backups privately.
 
 ### Message Filters
 
@@ -146,13 +146,13 @@ Work from the plugin to the listener instead of repeatedly changing keys or open
 | --- | --- |
 | Plugin does not load | Verify the DLL path, full compatible CounterStrikeSharp runtime, and its load errors. |
 | Startup reports zero or fewer targets | Check valid JSON, DNS resolution, port range, keys, the first-10-target limit, and contradictory filters. Look for the target's warning in server logs. |
-| Local UDP test fails | Confirm Universal's listener is enabled with the intended adapter, profile, port, and valid key. Resolve local errors before testing the remote path. |
+| Local UDP test fails | Confirm Ultimate CS2 RCON/Server Tool's listener is enabled with the intended adapter, profile, port, and valid key. Resolve local errors before testing the remote path. |
 | Local test works, game chat does not | Check that `TargetIp` points to the listener, UDP forwarding reaches the correct computer, firewall rules allow the server, and both ends use the same key. |
 | Commands are missing | Default filters suppress `!` and `/` messages. Check global values and per-target overrides. |
-| Packets arrive but messages are rejected | Check matching keys and clock accuracy. Universal rejects messages outside its two-minute time window and rejects duplicate nonces. |
-| Delivery stopped after a profile/key change | Reload ChatRelay and stop/re-enable Universal's listener using the matching profile. |
+| Packets arrive but messages are rejected | Check matching keys and clock accuracy. Ultimate CS2 RCON/Server Tool rejects messages outside its two-minute time window and rejects duplicate nonces. |
+| Delivery stopped after a profile/key change | Reload ChatRelay and stop/re-enable Ultimate CS2 RCON/Server Tool's listener using the matching profile. |
 
-Enable **Debug Mode** in Universal to inspect listener and packet activity, reproduce the issue, then turn it off. ChatRelay reports target-validation and UDP-send errors in the CounterStrikeSharp server log. Review ordinary logs for player information, addresses, and secrets before sharing.
+Enable **Debug Mode** in Ultimate CS2 RCON/Server Tool to inspect listener and packet activity, reproduce the issue, then turn it off. ChatRelay reports target-validation and UDP-send errors in the CounterStrikeSharp server log. Review ordinary logs for player information, addresses, and secrets before sharing.
 
 ## Wire Protocol
 
@@ -160,7 +160,7 @@ V1 uses a bounded binary envelope: `CRLY` magic, version `1`, algorithm `1` (AES
 
 The sender combines a cryptographically random 64-bit session prefix with a monotonically increasing 32-bit counter for nonces (one sender sequence per process; a process restart creates a new random prefix). Counter exhaustion fails rather than reusing a nonce. Prefix collisions across restarts are probabilistic, with a 2^-64 collision probability per pair of sessions.
 
-Universal accepts v1 timestamps within ±120 seconds and stores accepted nonces before displaying a message. The per-profile replay journal is bounded to 16,384 entries and retains entries for up to four minutes to cover the full future-skew window. A missing, corrupt, or unwritable journal causes secure listener startup or packet acceptance to fail closed. Deleting the journal resets replay history; the timestamp window then bounds the replay exposure to at most two minutes. Clock accuracy and protecting the local settings directory are prerequisites.
+Ultimate CS2 RCON/Server Tool accepts v1 timestamps within ±120 seconds and stores accepted nonces before displaying a message. The per-profile replay journal is bounded to 16,384 entries and retains entries for up to four minutes to cover the full future-skew window. A missing, corrupt, or unwritable journal causes secure listener startup or packet acceptance to fail closed. Deleting the journal resets replay history; the timestamp window then bounds the replay exposure to at most two minutes. Clock accuracy and protecting the local settings directory are prerequisites.
 
 The desktop app displays messages in a readable format such as:
 `[ALL] PlayerName: Hello`
